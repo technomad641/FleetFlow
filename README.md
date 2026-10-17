@@ -57,24 +57,38 @@ The contrast is pinned as a test. On an identical heavy demand stream:
 
 ## Does smarter routing help? A benchmark
 
-`bun run bench` runs every policy on the exact same seeded demand across a sweep of load levels. Because the simulation is deterministic, any difference is the routing decision and nothing else. At demand 6.0 pkg/tick per source (600 ticks, Atlas network):
+`bun run bench` runs every policy on the exact same seeded demand across a sweep of load levels, for each network. Because the simulation is deterministic, any difference is the routing decision and nothing else.
 
-| Policy | Delivered | Backlog | Throughput | On-time | Avg latency |
-| --- | --- | --- | --- | --- | --- |
-| Greedy (shortest path) | 5,299 | 1,973 | 8.9 | **14%** | 88.5 |
-| Round-robin | 6,521 | 746 | 11.2 | **45%** | 39.3 |
-| Balanced (congestion-aware) | 7,247 | 17 | 12.5 | **100%** | 11.0 |
-| Optimal (whole-path) | 7,234 | 17 | 12.4 | **100%** | 11.5 |
+**Atlas (the shallow network), demand 6.0 pkg/tick per source:**
 
-Two honest takeaways:
+| Policy | Delivered | Backlog | On-time |
+| --- | --- | --- | --- |
+| Greedy (shortest path) | 5,299 | 1,973 | **14%** |
+| Round-robin | 6,521 | 746 | **45%** |
+| Balanced (congestion-aware) | 7,247 | 17 | **100%** |
+| Optimal (whole-path) | 7,234 | 17 | **100%** |
 
-1. **Congestion-awareness is the whole game.** The policies blind to load (greedy, round-robin) collapse under pressure, delivering a third less and missing most of their deadlines. The congestion-aware policies hold at 100% on-time with almost no backlog.
-2. **The whole-path optimizer matches balanced here rather than beating it.** On a network this shallow, backpressure propagates fast enough that a one-hop congestion-aware heuristic already sees everything the optimizer sees. The optimizer's extra machinery (an all-pairs cheapest-path recompute each tick over congestion-priced edges) only earns its keep when congestion hides deeper in the network, or in sharper transients. Building the thing, measuring it, and knowing when a simpler policy already suffices is the point. A deeper adversarial topology where the optimizer wins decisively is the next milestone (see Roadmap).
+On Atlas, congestion-awareness is the whole game: the load-blind policies collapse, the congestion-aware ones hold. But Optimal only *matches* Balanced. The network is shallow enough that backpressure makes one-hop sensing sufficient, so whole-path routing has nothing extra to exploit. Knowing that a simple heuristic already suffices here is the point.
+
+**Gauntlet (a deeper, adversarial network):** two sources reach two stations by either a fast-but-small Express hub or a slow-but-fat Local hub. Here the policies come apart:
+
+| Policy | On-time @ low load | On-time @ high load | Backlog @ high load |
+| --- | --- | --- | --- |
+| Greedy | 100% | **5%** | 1,459 |
+| Balanced | **47%** | 45% | 18 |
+| Optimal | **93%** | **57%** | 18 |
+
+- **Greedy** is fastest while the Express lanes have room, then collapses when they saturate — it refuses the slow overflow.
+- **Balanced** is robust but mediocre everywhere: it scores lanes by load, not transit time, so it floods the fat-but-slow Local lanes and misses most deadlines.
+- **Optimal** is the only policy that is never bad. It weighs transit time against congestion over the whole path, fills the fast lanes, and spills to the slow ones only when it must.
+
+The honest takeaway: a sophisticated optimizer is worth building, but you have to know when it pays off. On a shallow network a simple heuristic already wins; on a deeper one the whole-path optimizer pulls clearly ahead. Switch networks in the app and toggle policies to watch it happen.
 
 ## Features
 
 - **Real-time discrete-event simulation** of a fulfillment network: sources emit bursty (Poisson) demand, hubs route it, sinks consume it.
 - **Four routing policies** you can switch live: greedy (shortest path), balanced (congestion-aware), optimal (whole-path, congestion-priced), and round-robin.
+- **Two networks** you can switch live: Atlas (where a one-hop heuristic suffices) and Gauntlet (a deeper network where the whole-path optimizer wins).
 - **Scenario injection**: fire a demand surge or take a hub offline and watch the network react and recover.
 - **Live instrumentation**: throughput, backlog, in-transit, on-time rate, delivered total, average latency.
 - **Deterministic and reproducible**: the entire run is a pure function of its seed, so a scenario replays identically and two policies can be compared on the exact same demand.
@@ -144,7 +158,7 @@ The suites cover the things that actually matter for a simulation: RNG determini
 ## Roadmap
 
 - **Phase 2a (done)** — a whole-path, congestion-priced optimal router added as a fourth policy, plus a deterministic benchmark harness (`bun run bench`). See the benchmark above.
-- **Phase 2b** — a "Gauntlet" network: a deeper, adversarial topology where one-hop balancing is provably suboptimal and the whole-path optimizer wins decisively.
+- **Phase 2b (done)** — a "Gauntlet" network: a deeper, adversarial topology where one-hop balancing is provably suboptimal and the whole-path optimizer wins decisively. Switchable live in the app.
 - **Phase 2c** — a separate "Dispatch" mode: classic vehicle routing (CVRP / VRPTW) with Clarke-Wright construction and local search, benchmarked against real CVRPLIB instances (Augerat, Solomon).
 - **Phase 3** — real road distances and maps, richer network editing, shareable scenarios via URL.
 - Light theme, saved scenarios, and a guided tour.

@@ -88,7 +88,12 @@ export function hopsBetween(network, fromId, toId) {
 // may enter per tick; lane `transit` is ticks to cross.
 export const DEFAULT_NETWORK = {
   id: "atlas",
-  name: "Atlas Network",
+  name: "Atlas",
+  // UI defaults: a comfortable demand, a lenient SLA, and the hint shown when a
+  // policy is overloading the network.
+  demand: 3.0,
+  sla: 34,
+  overloadHint: "Central hub overloaded. Switch routing to Balanced and watch it recover.",
   nodes: [
     { id: "SRC-W", name: "West Dock", kind: NODE_KIND.SOURCE, x: 0.08, y: 0.3, capacity: 20 },
     { id: "SRC-E", name: "East Dock", kind: NODE_KIND.SOURCE, x: 0.08, y: 0.72, capacity: 20 },
@@ -113,3 +118,48 @@ export const DEFAULT_NETWORK = {
     { from: "HUB-S", to: "DST-3", capacity: 6, transit: 5 },
   ],
 };
+
+// The Gauntlet network: deliberately built so that one-hop balancing is the
+// wrong call. Two sources reach two stations by either the Express hub (short
+// transit, small capacity) or the Local hub (long transit, big capacity).
+//
+// Because the Local lanes are fat, they always look "least loaded" to a policy
+// that scores lanes by occupancy, so Balanced floods the slow pipe and most of
+// its packets miss their deadline. Greedy always takes the Express lanes and is
+// fast until they saturate, then it refuses the overflow and collapses. Only the
+// whole-path Optimal router weighs transit time against congestion: it fills the
+// fast Express lanes and spills to Local only when it must, so it stays both fast
+// and on-time. This is the network where the optimizer earns its keep.
+export const GAUNTLET_NETWORK = {
+  id: "gauntlet",
+  name: "Gauntlet",
+  demand: 2.5,
+  sla: 14,
+  overloadHint: "Express hub jammed. Greedy stalls and Balanced floods the slow lanes. Try Optimal.",
+  nodes: [
+    { id: "SRC-A", name: "Dock A", kind: NODE_KIND.SOURCE, x: 0.08, y: 0.33, capacity: 20 },
+    { id: "SRC-B", name: "Dock B", kind: NODE_KIND.SOURCE, x: 0.08, y: 0.67, capacity: 20 },
+    { id: "EXP", name: "Express Hub", kind: NODE_KIND.HUB, x: 0.46, y: 0.28, capacity: 10 },
+    { id: "LOC", name: "Local Hub", kind: NODE_KIND.HUB, x: 0.46, y: 0.72, capacity: 18 },
+    { id: "DST-1", name: "Station 1", kind: NODE_KIND.SINK, x: 0.9, y: 0.33, capacity: 20 },
+    { id: "DST-2", name: "Station 2", kind: NODE_KIND.SINK, x: 0.9, y: 0.67, capacity: 20 },
+  ],
+  lanes: [
+    { from: "SRC-A", to: "EXP", capacity: 8, transit: 3 },
+    { from: "SRC-A", to: "LOC", capacity: 8, transit: 3 },
+    { from: "SRC-B", to: "EXP", capacity: 8, transit: 3 },
+    { from: "SRC-B", to: "LOC", capacity: 8, transit: 3 },
+    { from: "EXP", to: "DST-1", capacity: 4, transit: 3 },
+    { from: "EXP", to: "DST-2", capacity: 4, transit: 3 },
+    { from: "LOC", to: "DST-1", capacity: 9, transit: 16 },
+    { from: "LOC", to: "DST-2", capacity: 9, transit: 16 },
+  ],
+};
+
+// Registry of selectable networks, in UI order.
+export const NETWORKS = {
+  atlas: DEFAULT_NETWORK,
+  gauntlet: GAUNTLET_NETWORK,
+};
+
+export const NETWORK_LIST = [DEFAULT_NETWORK, GAUNTLET_NETWORK];

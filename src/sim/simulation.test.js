@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { createSimulation, step, setPolicy, triggerSurge } from "./simulation.js";
 import { summarize } from "./metrics.js";
-import { DEFAULT_NETWORK } from "./network.js";
+import { DEFAULT_NETWORK, GAUNTLET_NETWORK } from "./network.js";
 import { POLICIES } from "./policies.js";
 
 function run(state, ticks) {
@@ -84,4 +84,25 @@ export default function runSimulationTests() {
   const fresh = createSimulation({ networkDef: DEFAULT_NETWORK, seed: 1 });
   assert.ok(POLICIES.optimal.choose(fresh.network, fresh, "SRC-W", "DST-2"));
   assert.equal(POLICIES.optimal.choose(fresh.network, fresh, "DST-2", "DST-2"), null);
+
+  // Phase 2b: on the deeper Gauntlet network the optimizer wins decisively.
+  // Balanced floods the fat-but-slow overflow lanes (it scores load, not transit
+  // time) and misses most deadlines; greedy refuses the overflow and collapses
+  // under load; only optimal stays both fast and on-time.
+  const demand = 4.5;
+  const gOpt = createSimulation({ networkDef: GAUNTLET_NETWORK, seed: 42, demandRate: demand, slaTicks: 14 });
+  setPolicy(gOpt, "optimal");
+  run(gOpt, 700);
+  const gBal = createSimulation({ networkDef: GAUNTLET_NETWORK, seed: 42, demandRate: demand, slaTicks: 14 });
+  setPolicy(gBal, "balanced");
+  run(gBal, 700);
+  const gGrd = createSimulation({ networkDef: GAUNTLET_NETWORK, seed: 42, demandRate: demand, slaTicks: 14 });
+  setPolicy(gGrd, "greedy");
+  run(gGrd, 700);
+  const gos = summarize(gOpt);
+  const gbs = summarize(gBal);
+  const ggs = summarize(gGrd);
+  assert.ok(gos.onTimePct > gbs.onTimePct + 8, `optimal on-time ${gos.onTimePct} should beat balanced ${gbs.onTimePct}`);
+  assert.ok(gos.avgLatency < gbs.avgLatency, "optimal should be faster than balanced on Gauntlet");
+  assert.ok(ggs.backlog > gos.backlog * 10, "greedy should collapse where optimal holds");
 }

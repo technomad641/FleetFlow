@@ -7,7 +7,7 @@ import {
   triggerOutage,
 } from "./sim/simulation.js";
 import { summarize } from "./sim/metrics.js";
-import { DEFAULT_NETWORK } from "./sim/network.js";
+import { NETWORKS, NETWORK_LIST } from "./sim/network.js";
 import { POLICY_LIST } from "./sim/policies.js";
 import { drawScene } from "./render/renderer.js";
 
@@ -21,21 +21,29 @@ const RENDER_THEME = {
   label: "rgba(214, 219, 230, 0.82)",
 };
 
-function makeSim() {
-  return createSimulation({ networkDef: DEFAULT_NETWORK, seed: 42, demandRate: 3.0, policyId: "balanced" });
+function makeSim(networkId, policyId) {
+  const net = NETWORKS[networkId];
+  return createSimulation({
+    networkDef: net,
+    seed: 42,
+    demandRate: net.demand,
+    slaTicks: net.sla,
+    policyId,
+  });
 }
 
 export default function App() {
   const canvasRef = useRef(null);
-  const simRef = useRef(makeSim());
+  const simRef = useRef(makeSim("atlas", "balanced"));
   const runningRef = useRef(true);
   const speedRef = useRef(1);
   const lastTickRef = useRef(-1);
 
   const [running, setRunning] = useState(true);
   const [speed, setSpeed] = useState(1);
+  const [networkId, setNetworkId] = useState("atlas");
   const [policyId, setPolicyId] = useState("balanced");
-  const [demand, setDemand] = useState(3.0);
+  const [demand, setDemand] = useState(NETWORKS.atlas.demand);
   const [view, setView] = useState(() => summarize(simRef.current));
 
   // Single animation loop: a fixed-timestep accumulator advances the sim, and
@@ -128,14 +136,24 @@ export default function App() {
   };
 
   const reset = () => {
-    simRef.current = makeSim();
+    simRef.current = makeSim(networkId, policyId);
     simRef.current.config.demandRate = demand;
-    setPolicy(simRef.current, policyId);
     lastTickRef.current = -1;
     setView(summarize(simRef.current));
   };
 
-  const overloaded = policyId === "greedy" && view.backlog >= BACKLOG_ALERT;
+  const changeNetwork = (id) => {
+    const net = NETWORKS[id];
+    simRef.current = makeSim(id, policyId);
+    setNetworkId(id);
+    setDemand(net.demand);
+    lastTickRef.current = -1;
+    setView(summarize(simRef.current));
+  };
+
+  // Nudge the viewer toward a better policy when the current one is backing the
+  // network up. Optimal is the best answer on both maps, so it never triggers.
+  const overloaded = policyId !== "optimal" && view.backlog >= BACKLOG_ALERT;
 
   return (
     <div className="app">
@@ -146,6 +164,18 @@ export default function App() {
             <h1 className="brand__name">Fleet Flow</h1>
             <p className="brand__tag">A live fulfillment network, routed in real time.</p>
           </div>
+        </div>
+        <div className="segmented segmented--network" role="group" aria-label="Network">
+          {NETWORK_LIST.map((net) => (
+            <button
+              key={net.id}
+              className={`segmented__item ${networkId === net.id ? "is-active" : ""}`}
+              onClick={() => changeNetwork(net.id)}
+              title={net.id === "gauntlet" ? "Deeper network where whole-path routing wins" : "Balanced beats greedy here"}
+            >
+              {net.name}
+            </button>
+          ))}
         </div>
         <a
           className="ghlink"
@@ -175,7 +205,7 @@ export default function App() {
           )}
           {overloaded && (
             <div className="banner banner--hot" role="status">
-              Central hub overloaded. Switch routing to <strong>Balanced</strong> and watch it recover.
+              {NETWORKS[networkId].overloadHint}
             </div>
           )}
         </div>
