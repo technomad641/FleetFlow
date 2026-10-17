@@ -8,15 +8,20 @@ Build a network of fulfillment centers and lanes, pour demand through it, and wa
 
 <br />
 
-![tests](https://img.shields.io/badge/tests-5%20suites%20passing-4ade80)
-![bundle](https://img.shields.io/badge/bundle-51KB%20gzipped-38bdf8)
-![deps](https://img.shields.io/badge/runtime%20deps-react%20only-8b5cf6)
+[**▶ Live demo**](https://technomad641.github.io/FleetFlow/) &nbsp;·&nbsp; [Design doc](DESIGN.md)
+
+<br />
+
+![tests](https://img.shields.io/badge/tests-5%20suites%20passing-3fb950)
+![bundle](https://img.shields.io/badge/bundle-51KB%20gzipped-eeeeee)
+![deps](https://img.shields.io/badge/runtime%20deps-react%20only-cccccc)
 ![license](https://img.shields.io/badge/license-MIT-black)
 
 <br />
 
-<!-- A recorded demo clip goes here once the UI QA pass is done. -->
-<em>Live demo and recording coming with the first deploy.</em>
+![Fleet Flow demo: balanced routing holds the network, then Greedy under a surge chokes the central hub and it turns red](docs/assets/demo.gif)
+
+<sub>Balanced routing keeps the network flowing. Switch to Greedy under a demand surge and the central hub turns red and backs up. Red is the only color on screen, and it always means congestion.</sub>
 
 </div>
 
@@ -36,6 +41,19 @@ The contrast is pinned as a test. On an identical heavy demand stream:
 | --- | --- | --- | --- |
 | Greedy (shortest path) | **509** waiting | 9.0 pkg/tick (choked) | **47%** |
 | Balanced (congestion-aware) | **12** waiting | 10.1 pkg/tick | **100%** |
+
+## The two states
+
+<table>
+<tr>
+<td width="50%"><img src="docs/assets/balanced.jpg" alt="Balanced routing: the network flows, everything stays white, on-time 100%" /></td>
+<td width="50%"><img src="docs/assets/collapse.jpg" alt="Greedy routing under a surge: the central hub glows red, backlog explodes" /></td>
+</tr>
+<tr>
+<td align="center"><strong>Balanced</strong> — the network flows, on-time holds at 100%.</td>
+<td align="center"><strong>Greedy + surge</strong> — the central hub chokes and the arteries turn red.</td>
+</tr>
+</table>
 
 ## Features
 
