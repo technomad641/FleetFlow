@@ -55,10 +55,26 @@ The contrast is pinned as a test. On an identical heavy demand stream:
 </tr>
 </table>
 
+## Does smarter routing help? A benchmark
+
+`bun run bench` runs every policy on the exact same seeded demand across a sweep of load levels. Because the simulation is deterministic, any difference is the routing decision and nothing else. At demand 6.0 pkg/tick per source (600 ticks, Atlas network):
+
+| Policy | Delivered | Backlog | Throughput | On-time | Avg latency |
+| --- | --- | --- | --- | --- | --- |
+| Greedy (shortest path) | 5,299 | 1,973 | 8.9 | **14%** | 88.5 |
+| Round-robin | 6,521 | 746 | 11.2 | **45%** | 39.3 |
+| Balanced (congestion-aware) | 7,247 | 17 | 12.5 | **100%** | 11.0 |
+| Optimal (whole-path) | 7,234 | 17 | 12.4 | **100%** | 11.5 |
+
+Two honest takeaways:
+
+1. **Congestion-awareness is the whole game.** The policies blind to load (greedy, round-robin) collapse under pressure, delivering a third less and missing most of their deadlines. The congestion-aware policies hold at 100% on-time with almost no backlog.
+2. **The whole-path optimizer matches balanced here rather than beating it.** On a network this shallow, backpressure propagates fast enough that a one-hop congestion-aware heuristic already sees everything the optimizer sees. The optimizer's extra machinery (an all-pairs cheapest-path recompute each tick over congestion-priced edges) only earns its keep when congestion hides deeper in the network, or in sharper transients. Building the thing, measuring it, and knowing when a simpler policy already suffices is the point. A deeper adversarial topology where the optimizer wins decisively is the next milestone (see Roadmap).
+
 ## Features
 
 - **Real-time discrete-event simulation** of a fulfillment network: sources emit bursty (Poisson) demand, hubs route it, sinks consume it.
-- **Three routing policies** you can switch live: greedy, balanced, and round-robin.
+- **Four routing policies** you can switch live: greedy (shortest path), balanced (congestion-aware), optimal (whole-path, congestion-priced), and round-robin.
 - **Scenario injection**: fire a demand surge or take a hub offline and watch the network react and recover.
 - **Live instrumentation**: throughput, backlog, in-transit, on-time rate, delivered total, average latency.
 - **Deterministic and reproducible**: the entire run is a pure function of its seed, so a scenario replays identically and two policies can be compared on the exact same demand.
@@ -110,7 +126,7 @@ src/
   sim/
     rng.js          seeded PRNG + Poisson demand (deterministic)
     network.js      node/lane model, BFS hop distances, the reference network
-    policies.js     greedy / balanced / round-robin routing
+    policies.js     greedy / balanced / optimal / round-robin routing
     simulation.js   the tick engine: demand -> dispatch -> advance -> accounting
     metrics.js      read-only dashboard + load views
     *.test.js       one suite per module
@@ -127,7 +143,9 @@ The suites cover the things that actually matter for a simulation: RNG determini
 
 ## Roadmap
 
-- **Phase 2** — a real vehicle-routing optimizer (VRP / VRPTW) plugged in as a routing policy, benchmarked against standard instances (Augerat, Solomon). The policy interface already exists; the optimizer is just a smarter `choose`.
+- **Phase 2a (done)** — a whole-path, congestion-priced optimal router added as a fourth policy, plus a deterministic benchmark harness (`bun run bench`). See the benchmark above.
+- **Phase 2b** — a "Gauntlet" network: a deeper, adversarial topology where one-hop balancing is provably suboptimal and the whole-path optimizer wins decisively.
+- **Phase 2c** — a separate "Dispatch" mode: classic vehicle routing (CVRP / VRPTW) with Clarke-Wright construction and local search, benchmarked against real CVRPLIB instances (Augerat, Solomon).
 - **Phase 3** — real road distances and maps, richer network editing, shareable scenarios via URL.
 - Light theme, saved scenarios, and a guided tour.
 

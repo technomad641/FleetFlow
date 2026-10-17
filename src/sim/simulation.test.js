@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { createSimulation, step, setPolicy, triggerSurge } from "./simulation.js";
 import { summarize } from "./metrics.js";
 import { DEFAULT_NETWORK } from "./network.js";
+import { POLICIES } from "./policies.js";
 
 function run(state, ticks) {
   for (let i = 0; i < ticks; i += 1) step(state);
@@ -62,4 +63,25 @@ export default function runSimulationTests() {
   assert.ok(gs.backlog > bs.backlog * 5, `greedy backlog ${gs.backlog} should dwarf balanced ${bs.backlog}`);
   assert.ok(bs.delivered > gs.delivered, "balanced should deliver more under congestion");
   assert.ok(bs.onTimePct > gs.onTimePct + 20, "balanced should be far more on-time");
+
+  // The optimal policy (whole-path, congestion-priced routing) is a valid router
+  // and holds under congestion where greedy collapses. On the Atlas network it
+  // matches balanced rather than beating it: backpressure makes one-hop sensing
+  // sufficient here. That honest result is documented in scripts/benchmark.mjs.
+  const opt = createSimulation({ networkDef: DEFAULT_NETWORK, seed: 42, demandRate: 6.0 });
+  setPolicy(opt, "optimal");
+  run(opt, 600);
+  const grd = createSimulation({ networkDef: DEFAULT_NETWORK, seed: 42, demandRate: 6.0 });
+  setPolicy(grd, "greedy");
+  run(grd, 600);
+  const os = summarize(opt);
+  const gg = summarize(grd);
+  assert.ok(os.onTimePct > 90, `optimal should hold on-time, got ${os.onTimePct}`);
+  assert.ok(gg.onTimePct < 60, "greedy should collapse under the same load");
+  assert.ok(os.delivered > gg.delivered, "optimal should outdeliver greedy");
+
+  // Optimal picks a progressing lane and returns null at the destination.
+  const fresh = createSimulation({ networkDef: DEFAULT_NETWORK, seed: 1 });
+  assert.ok(POLICIES.optimal.choose(fresh.network, fresh, "SRC-W", "DST-2"));
+  assert.equal(POLICIES.optimal.choose(fresh.network, fresh, "DST-2", "DST-2"), null);
 }

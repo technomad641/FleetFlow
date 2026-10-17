@@ -31,6 +31,70 @@ function laneLoad(state, lane) {
   return inTransit / carrying + targetQueue / Math.max(1, state.network.nodeById.get(lane.to).capacity * 2);
 }
 
+// Time cost of sending one more packet down a lane right now: its transit time,
+// plus a convex penalty that climbs steeply as the lane fills, plus the queueing
+// delay at the node it feeds. Convex (occupancy squared) is what makes the
+// whole-path optimizer flee a near-full lane well before it is actually jammed.
+function edgeCost(network, state, lane) {
+  const contents = state.lanes.get(lane.id).contents.length;
+  const occupancy = contents / Math.max(1, lane.capacity * lane.transit);
+  const target = network.nodeById.get(lane.to);
+  const queueDelay = state.nodes.get(lane.to).queue.length / Math.max(1, target.capacity);
+  return lane.transit * (1 + 6 * occupancy * occupancy) + 4 * queueDelay;
+}
+
+// All-pairs cheapest-cost routing table over the current congestion-priced graph
+// (Floyd-Warshall). `next.get(from).get(dest)` is the first lane on the cheapest
+// path. The network is a DAG (sources -> hubs -> sinks), so every path is finite
+// and recomputing each tick is cheap at this size. Cached on state per tick so
+// it is built once, not once per packet.
+function optimalRouting(network, state) {
+  if (state._optimal && state._optimal.tick === state.tick) return state._optimal.next;
+
+  const ids = network.nodes.map((n) => n.id);
+  const index = new Map(ids.map((id, i) => [id, i]));
+  const n = ids.length;
+  const INF = Infinity;
+  const dist = Array.from({ length: n }, () => new Array(n).fill(INF));
+  const hop = Array.from({ length: n }, () => new Array(n).fill(null));
+  for (let i = 0; i < n; i += 1) dist[i][i] = 0;
+
+  for (const lane of network.lanes) {
+    const a = index.get(lane.from);
+    const b = index.get(lane.to);
+    const c = edgeCost(network, state, lane);
+    if (c < dist[a][b]) {
+      dist[a][b] = c;
+      hop[a][b] = lane.id;
+    }
+  }
+
+  for (let k = 0; k < n; k += 1) {
+    for (let i = 0; i < n; i += 1) {
+      if (dist[i][k] === INF) continue;
+      for (let j = 0; j < n; j += 1) {
+        const through = dist[i][k] + dist[k][j];
+        if (through < dist[i][j]) {
+          dist[i][j] = through;
+          hop[i][j] = hop[i][k];
+        }
+      }
+    }
+  }
+
+  const next = new Map();
+  for (let i = 0; i < n; i += 1) {
+    const row = new Map();
+    for (let j = 0; j < n; j += 1) {
+      if (i !== j && hop[i][j]) row.set(ids[j], hop[i][j]);
+    }
+    next.set(ids[i], row);
+  }
+
+  state._optimal = { tick: state.tick, next };
+  return next;
+}
+
 export const POLICIES = {
   greedy: {
     id: "greedy",
@@ -74,6 +138,19 @@ export const POLICIES = {
     },
   },
 
+  optimal: {
+    id: "optimal",
+    label: "Optimal",
+    tagline: "Congestion-priced whole-path routing",
+    choose(network, state, nodeId, dest) {
+      // Unlike balanced (which scores only the next lane), this follows the
+      // cheapest full path to the destination over the current congestion
+      // prices, so it avoids hubs that are jammed two hops downstream.
+      const next = optimalRouting(network, state);
+      return next.get(nodeId)?.get(dest) ?? null;
+    },
+  },
+
   roundRobin: {
     id: "roundRobin",
     label: "Round-robin",
@@ -90,4 +167,9 @@ export const POLICIES = {
   },
 };
 
-export const POLICY_LIST = [POLICIES.greedy, POLICIES.balanced, POLICIES.roundRobin];
+export const POLICY_LIST = [
+  POLICIES.greedy,
+  POLICIES.balanced,
+  POLICIES.optimal,
+  POLICIES.roundRobin,
+];

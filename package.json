@@ -7,6 +7,7 @@
   "scripts": {
     "dev": "vite",
     "test": "node scripts/run-tests.mjs",
+    "bench": "node scripts/benchmark.mjs",
     "build": "node scripts/run-tests.mjs && vite build",
     "preview": "vite preview"
   },
