@@ -1,0 +1,21 @@
+{
+  "name": "fleetflow",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "An interactive, in-browser simulation of a fulfillment network. Watch work flow, backlog build, and bottlenecks form in real time.",
+  "scripts": {
+    "dev": "vite",
+    "test": "node scripts/run-tests.mjs",
+    "build": "node scripts/run-tests.mjs && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^4.5.3"
+  }
+}

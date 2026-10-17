@@ -1,0 +1,65 @@
+import assert from "node:assert/strict";
+import { createSimulation, step, setPolicy, triggerSurge } from "./simulation.js";
+import { summarize } from "./metrics.js";
+import { DEFAULT_NETWORK } from "./network.js";
+
+function run(state, ticks) {
+  for (let i = 0; i < ticks; i += 1) step(state);
+  return state;
+}
+
+export default function runSimulationTests() {
+  // Determinism: identical seed and config replay identically.
+  const a = run(createSimulation({ networkDef: DEFAULT_NETWORK, seed: 3 }), 200);
+  const b = run(createSimulation({ networkDef: DEFAULT_NETWORK, seed: 3 }), 200);
+  assert.deepEqual(summarize(a), summarize(b));
+
+  // A different seed gives a different run (the whole snapshot diverges, even
+  // if the raw created-count happens to coincide).
+  const c = run(createSimulation({ networkDef: DEFAULT_NETWORK, seed: 99 }), 200);
+  assert.notDeepEqual(summarize(a), summarize(c));
+
+  // Conservation: every packet created is either delivered or still active.
+  const cons = run(createSimulation({ networkDef: DEFAULT_NETWORK, seed: 7 }), 150);
+  const s = summarize(cons);
+  assert.equal(s.created, s.delivered + s.active);
+
+  // Drain: stop demand and the network empties, delivering everything.
+  const drain = createSimulation({ networkDef: DEFAULT_NETWORK, seed: 12, demandRate: 1.2 });
+  run(drain, 100);
+  drain.config.demandRate = 0;
+  run(drain, 400);
+  const drained = summarize(drain);
+  assert.equal(drained.active, 0, "network should fully drain");
+  assert.equal(drained.backlog, 0);
+  assert.equal(drained.inTransit, 0);
+  assert.equal(drained.created, drained.delivered);
+
+  // Surge: a spike produces meaningfully more demand than a quiet stretch.
+  const surge = createSimulation({ networkDef: DEFAULT_NETWORK, seed: 4, demandRate: 1.0 });
+  run(surge, 50);
+  const beforeQuiet = surge.created;
+  run(surge, 50);
+  const quietDelta = surge.created - beforeQuiet;
+  triggerSurge(surge, 50);
+  const beforeSurge = surge.created;
+  run(surge, 50);
+  const surgeDelta = surge.created - beforeSurge;
+  assert.ok(surgeDelta > quietDelta, `surge ${surgeDelta} not above quiet ${quietDelta}`);
+
+  // Policy matters, and balanced is strictly better under congestion. On the
+  // exact same heavy demand stream, greedy funnels onto the capacity-capped
+  // central hub and backs up; balanced spreads the load and holds throughput.
+  // This is the simulator's whole thesis, pinned as a test.
+  const g = createSimulation({ networkDef: DEFAULT_NETWORK, seed: 8, demandRate: 5.0 });
+  setPolicy(g, "greedy");
+  run(g, 400);
+  const bal = createSimulation({ networkDef: DEFAULT_NETWORK, seed: 8, demandRate: 5.0 });
+  setPolicy(bal, "balanced");
+  run(bal, 400);
+  const gs = summarize(g);
+  const bs = summarize(bal);
+  assert.ok(gs.backlog > bs.backlog * 5, `greedy backlog ${gs.backlog} should dwarf balanced ${bs.backlog}`);
+  assert.ok(bs.delivered > gs.delivered, "balanced should deliver more under congestion");
+  assert.ok(bs.onTimePct > gs.onTimePct + 20, "balanced should be far more on-time");
+}
