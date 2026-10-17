@@ -168,15 +168,17 @@ export default function App() {
 
       <section className="stage">
         <canvas ref={canvasRef} className="canvas" />
-        {overloaded && (
-          <div className="banner banner--hot" role="status">
-            Central hub overloaded. Switch routing to <strong>Balanced</strong> and watch it recover.
-          </div>
-        )}
-        {view.surging && <div className="banner banner--surge" role="status">Demand surge in progress</div>}
-        {view.outageNode && (
-          <div className="banner banner--out" role="status">Hub offline: {view.outageNode}</div>
-        )}
+        <div className="banners">
+          {view.surging && <div className="banner banner--surge" role="status">Demand surge in progress</div>}
+          {view.outageNode && (
+            <div className="banner banner--out" role="status">Hub offline: {view.outageNode}</div>
+          )}
+          {overloaded && (
+            <div className="banner banner--hot" role="status">
+              Central hub overloaded. Switch routing to <strong>Balanced</strong> and watch it recover.
+            </div>
+          )}
+        </div>
       </section>
 
       <footer className="controls">
