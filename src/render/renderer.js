@@ -11,25 +11,22 @@ import { networkLoad } from "../sim/metrics.js";
 
 const MAX_QUEUE_DOTS = 10;
 
-// Cool-to-hot ramp for load: calm blue when healthy, amber as it fills, red when
-// it chokes. Input is a 0..1+ load fraction.
+// Monochrome load ramp with a single alert color. Calm load reads as dim gray,
+// busier load brightens toward white, and only genuine congestion tips into red,
+// so the one bit of color on the screen always means "this is backing up."
+// Input is a 0..1+ load fraction.
+const CONGESTION = 0.6;
+
 function loadColor(load, alpha = 1) {
   const t = Math.min(1, Math.max(0, load));
-  let r;
-  let g;
-  let b;
-  if (t < 0.5) {
-    const k = t / 0.5; // blue -> amber
-    r = lerp(90, 245, k);
-    g = lerp(170, 190, k);
-    b = lerp(255, 70, k);
-  } else {
-    const k = (t - 0.5) / 0.5; // amber -> red
-    r = lerp(245, 255, k);
-    g = lerp(190, 70, k);
-    b = lerp(70, 70, k);
+  if (t < CONGESTION) {
+    const v = Math.round(lerp(150, 255, t / CONGESTION)); // gray -> white
+    return `rgba(${v}, ${v}, ${v}, ${alpha})`;
   }
-  return `rgba(${r | 0}, ${g | 0}, ${b | 0}, ${alpha})`;
+  const k = (t - CONGESTION) / (1 - CONGESTION); // white -> alert red
+  const g = Math.round(lerp(255, 64, k));
+  const b = Math.round(lerp(255, 72, k));
+  return `rgba(255, ${g}, ${b}, ${alpha})`;
 }
 
 function lerp(a, b, t) {
@@ -131,7 +128,7 @@ function drawLane(ctx, a, b, laneLoad, lane, tickFloat) {
 
 function drawPacket(ctx, x, y) {
   ctx.beginPath();
-  ctx.fillStyle = "rgba(226, 240, 255, 0.95)";
+  ctx.fillStyle = "rgba(240, 242, 248, 0.95)";
   ctx.arc(x, y, 2.6, 0, Math.PI * 2);
   ctx.fill();
 }
@@ -173,12 +170,12 @@ function drawQueue(ctx, point, queueLength) {
   const startX = x - r - 10;
   for (let i = 0; i < shown; i += 1) {
     ctx.beginPath();
-    ctx.fillStyle = "rgba(255, 196, 120, 0.9)";
+    ctx.fillStyle = "rgba(232, 236, 245, 0.92)";
     ctx.arc(startX - (i % 5) * 6, y - 12 + Math.floor(i / 5) * 8, 2.2, 0, Math.PI * 2);
     ctx.fill();
   }
   if (queueLength > MAX_QUEUE_DOTS) {
-    ctx.fillStyle = "rgba(255, 196, 120, 0.95)";
+    ctx.fillStyle = "rgba(232, 236, 245, 0.95)";
     ctx.font = "600 11px ui-sans-serif, system-ui, sans-serif";
     ctx.textAlign = "right";
     ctx.textBaseline = "middle";

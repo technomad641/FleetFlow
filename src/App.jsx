@@ -16,9 +16,9 @@ const SPEEDS = [0.5, 1, 2, 4];
 const BACKLOG_ALERT = 60;
 
 const RENDER_THEME = {
-  grid: "rgba(255, 255, 255, 0.045)",
-  nodeFill: "rgba(14, 18, 28, 0.92)",
-  label: "rgba(208, 219, 236, 0.82)",
+  grid: "rgba(255, 255, 255, 0.05)",
+  nodeFill: "rgba(10, 11, 14, 0.94)",
+  label: "rgba(214, 219, 230, 0.82)",
 };
 
 function makeSim() {

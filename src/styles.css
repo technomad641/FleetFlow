@@ -15,12 +15,13 @@
   --text-muted: #8b93a7;
   --text-faint: #5b6377;
 
-  --accent: #38bdf8;
-  --accent-2: #8b5cf6;
-  --accent-grad: linear-gradient(120deg, #38bdf8, #8b5cf6);
-  --good: #4ade80;
-  --hot: #fb7185;
-  --warn: #fbbf24;
+  /* Monochrome palette. Red is the one alert color and means congestion only. */
+  --accent: #ffffff;
+  --accent-2: #b8c0d0;
+  --accent-grad: linear-gradient(120deg, #ffffff, #aeb6c6);
+  --good: #eef1f7;
+  --hot: #ff5a6e;
+  --warn: #ff5a6e;
 
   --radius: 14px;
   --radius-sm: 10px;
@@ -43,8 +44,8 @@ body {
   font-family: var(--font);
   color: var(--text);
   background:
-    radial-gradient(1200px 700px at 12% -10%, rgba(56, 189, 248, 0.14), transparent 55%),
-    radial-gradient(1000px 680px at 110% 10%, rgba(139, 92, 246, 0.12), transparent 50%),
+    radial-gradient(1200px 700px at 12% -10%, rgba(255, 255, 255, 0.07), transparent 55%),
+    radial-gradient(1000px 680px at 110% 10%, rgba(255, 255, 255, 0.05), transparent 50%),
     linear-gradient(180deg, var(--bg-1), var(--bg-0));
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
@@ -80,7 +81,7 @@ body {
   height: 38px;
   border-radius: 11px;
   background: var(--accent-grad);
-  box-shadow: 0 0 22px -2px rgba(56, 189, 248, 0.6);
+  box-shadow: 0 0 22px -4px rgba(255, 255, 255, 0.5);
   position: relative;
   flex: none;
 }
@@ -190,8 +191,8 @@ body {
   border-radius: 20px;
   overflow: hidden;
   background:
-    radial-gradient(900px 520px at 50% 0%, rgba(56, 189, 248, 0.06), transparent 60%),
-    rgba(9, 11, 18, 0.55);
+    radial-gradient(900px 520px at 50% 0%, rgba(255, 255, 255, 0.05), transparent 60%),
+    rgba(9, 10, 13, 0.55);
   box-shadow: var(--shadow);
   min-height: 320px;
 }
@@ -234,9 +235,9 @@ body {
 }
 
 .banner--surge {
-  background: rgba(251, 191, 36, 0.18);
-  border-color: rgba(251, 191, 36, 0.5);
-  color: #fde9bd;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--border-strong);
+  color: var(--text);
 }
 
 .banner--out {
@@ -301,9 +302,9 @@ body {
 .btn--primary {
   background: var(--accent-grad);
   border: none;
-  color: #06121c;
+  color: #0a0b0e;
   min-width: 84px;
-  box-shadow: 0 8px 24px -10px rgba(56, 189, 248, 0.7);
+  box-shadow: 0 8px 24px -10px rgba(255, 255, 255, 0.45);
 }
 
 .btn--primary:hover {
@@ -345,12 +346,12 @@ body {
 }
 
 .segmented__item.is-active {
-  color: #06121c;
+  color: #0a0b0e;
   background: var(--accent-grad);
 }
 
 .segmented--policy .segmented__item.is-active {
-  box-shadow: 0 6px 18px -10px rgba(139, 92, 246, 0.8);
+  box-shadow: 0 6px 18px -10px rgba(255, 255, 255, 0.5);
 }
 
 .field {
@@ -390,7 +391,7 @@ body {
   border-radius: 50%;
   background: var(--accent);
   cursor: pointer;
-  box-shadow: 0 0 10px -1px rgba(56, 189, 248, 0.8);
+  box-shadow: 0 0 10px -1px rgba(255, 255, 255, 0.7);
 }
 
 .slider::-moz-range-thumb {

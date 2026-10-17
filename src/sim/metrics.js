@@ -35,7 +35,10 @@ export function networkLoad(state) {
   const nodes = new Map();
   for (const node of state.network.nodes) {
     const queue = state.nodes.get(node.id).queue.length;
-    nodes.set(node.id, queue / Math.max(1, node.capacity));
+    // Scale against several ticks of service, so a node reads as congested (and
+    // tips into the alert color) only when work is genuinely piling up faster
+    // than it can clear, not just because one tick of demand is waiting.
+    nodes.set(node.id, queue / Math.max(1, node.capacity * 2.5));
   }
 
   const lanes = new Map();
