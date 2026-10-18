@@ -19,9 +19,9 @@ Build a network of fulfillment centers and lanes, pour demand through it, and wa
 
 <br />
 
-![Fleet Flow demo: balanced routing holds the network, then Greedy under a surge chokes the central hub and it turns red](docs/assets/demo.gif)
+![Fleet Flow demo: the guided tour runs from balanced routing to a greedy surge collapse to the Gauntlet network where the optimal router wins](docs/assets/demo.gif)
 
-<sub>Balanced routing keeps the network flowing. Switch to Greedy under a demand surge and the central hub turns red and backs up. Red is the only color on screen, and it always means congestion.</sub>
+<sub>The guided tour, start to finish: Balanced routing holding the network, the Greedy surge collapse (red is the only color on screen, and it always means congestion), then the Gauntlet network where the whole-path Optimal router pulls ahead.</sub>
 
 </div>
 
