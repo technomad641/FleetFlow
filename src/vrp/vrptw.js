@@ -212,7 +212,7 @@ function naiveRoutes(instance) {
 //   tw-i1    - Solomon I1 insertion (time-window feasible).
 //   tw-opt   - I1 followed by time-feasible 2-opt.
 export function solveVrptw(instance, solverId = "tw-opt", cvrpRoutes) {
-  const dist = distanceMatrix(points(instance));
+  const dist = distanceMatrix(points(instance), instance.roundDistances);
   let routes;
   if (solverId === "tw-cvrp") {
     // Caller passes the distance-only routes (from solver.js) to schedule here.

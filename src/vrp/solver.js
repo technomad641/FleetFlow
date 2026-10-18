@@ -128,7 +128,7 @@ export function optimize(routes, dist) {
 
 // Solve and return the routes plus the metrics the UI needs.
 export function solve(instance, solverId = "opt") {
-  const dist = distanceMatrix(points(instance));
+  const dist = distanceMatrix(points(instance), instance.roundDistances);
   let routes;
   if (solverId === "naive") {
     routes = naive(instance);

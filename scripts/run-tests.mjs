@@ -11,6 +11,7 @@ import runShareStateTests from "../src/shareState.test.js";
 import runVrpInstanceTests from "../src/vrp/instance.test.js";
 import runSolverTests from "../src/vrp/solver.test.js";
 import runVrptwTests from "../src/vrp/vrptw.test.js";
+import runInstancesTests from "../src/vrp/instances.test.js";
 import runThemeTests from "../src/theme.test.js";
 
 const testSuites = [
@@ -23,6 +24,7 @@ const testSuites = [
   ["vrp-instance", runVrpInstanceTests],
   ["vrp-solver", runSolverTests],
   ["vrptw", runVrptwTests],
+  ["real-instances", runInstancesTests],
   ["theme", runThemeTests],
 ];
 

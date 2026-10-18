@@ -14,12 +14,14 @@ export function euclid(a, b) {
 }
 
 // Distance matrix for points indexed [depot, ...customers]. Index 0 is the depot.
-export function distanceMatrix(points) {
+// `round` rounds each distance to the nearest integer, the TSPLIB EUC_2D
+// convention the Augerat CVRP instances (and their BKS) are computed with.
+export function distanceMatrix(points, round = false) {
   const n = points.length;
   const d = Array.from({ length: n }, () => new Array(n).fill(0));
   for (let i = 0; i < n; i += 1) {
     for (let j = i + 1; j < n; j += 1) {
-      const dist = euclid(points[i], points[j]);
+      const dist = round ? Math.round(euclid(points[i], points[j])) : euclid(points[i], points[j]);
       d[i][j] = dist;
       d[j][i] = dist;
     }
