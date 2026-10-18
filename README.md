@@ -12,8 +12,8 @@ Build a network of fulfillment centers and lanes, pour demand through it, and wa
 
 <br />
 
-![tests](https://img.shields.io/badge/tests-5%20suites%20passing-3fb950)
-![bundle](https://img.shields.io/badge/bundle-51KB%20gzipped-eeeeee)
+![tests](https://img.shields.io/badge/tests-9%20suites%20passing-3fb950)
+![bundle](https://img.shields.io/badge/bundle-57KB%20gzipped-eeeeee)
 ![deps](https://img.shields.io/badge/runtime%20deps-react%20only-cccccc)
 ![license](https://img.shields.io/badge/license-MIT-black)
 
@@ -185,7 +185,7 @@ src/
   content.js          intro copy, legend, guided-tour script
   App.jsx             orchestrator: mode switch, render loop, controls
   Dispatch.jsx        the Dispatch view
-  *.test.js           one suite per pure module (8 in all)
+  *.test.js           one suite per pure module (9 in all)
 ```
 
 ### Testing
