@@ -7,6 +7,7 @@ import runNetworkTests from "../src/sim/network.test.js";
 import runPolicyTests from "../src/sim/policies.test.js";
 import runSimulationTests from "../src/sim/simulation.test.js";
 import runMetricsTests from "../src/sim/metrics.test.js";
+import runShareStateTests from "../src/shareState.test.js";
 
 const testSuites = [
   ["rng", runRngTests],
@@ -14,6 +15,7 @@ const testSuites = [
   ["policies", runPolicyTests],
   ["simulation", runSimulationTests],
   ["metrics", runMetricsTests],
+  ["shareState", runShareStateTests],
 ];
 
 let failures = 0;

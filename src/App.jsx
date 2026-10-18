@@ -13,6 +13,7 @@ import { drawScene } from "./render/renderer.js";
 import Intro from "./Intro.jsx";
 import Tour from "./Tour.jsx";
 import { TOUR_STEPS } from "./content.js";
+import { encodeScenario, decodeScenario, hasScenario } from "./shareState.js";
 
 const BASE_TPS = 10; // simulation ticks per second at 1x speed
 const SPEEDS = [0.5, 1, 2, 4];
@@ -53,21 +54,35 @@ function makeSim(networkId, policyId) {
 }
 
 export default function App() {
+  // Initialize from a shared-scenario URL if present, else defaults.
+  const search = typeof window !== "undefined" ? window.location.search : "";
+  const initialRef = useRef(null);
+  if (!initialRef.current) {
+    initialRef.current = decodeScenario(search, { network: "atlas", policy: "balanced", speed: 1 });
+  }
+  const initial = initialRef.current;
+
   const canvasRef = useRef(null);
-  const simRef = useRef(makeSim("atlas", "balanced"));
+  const simRef = useRef(null);
+  if (!simRef.current) {
+    const s = makeSim(initial.network, initial.policy);
+    s.config.demandRate = initial.demand;
+    simRef.current = s;
+  }
   const runningRef = useRef(true);
-  const speedRef = useRef(1);
+  const speedRef = useRef(initial.speed);
   const lastTickRef = useRef(-1);
 
   const [running, setRunning] = useState(true);
-  const [speed, setSpeed] = useState(1);
-  const [networkId, setNetworkId] = useState("atlas");
-  const [policyId, setPolicyId] = useState("balanced");
-  const [demand, setDemand] = useState(NETWORKS.atlas.demand);
+  const [speed, setSpeed] = useState(initial.speed);
+  const [networkId, setNetworkId] = useState(initial.network);
+  const [policyId, setPolicyId] = useState(initial.policy);
+  const [demand, setDemand] = useState(initial.demand);
   const [view, setView] = useState(() => summarize(simRef.current));
-  const [showIntro, setShowIntro] = useState(() => !introSeen());
+  const [showIntro, setShowIntro] = useState(() => !introSeen() && !hasScenario(search));
   const [tourIndex, setTourIndex] = useState(null);
   const [highlight, setHighlight] = useState(null);
+  const [copied, setCopied] = useState(false);
 
   // Single animation loop: a fixed-timestep accumulator advances the sim, and
   // every frame renders with interpolation for smoothness.
@@ -135,6 +150,34 @@ export default function App() {
       resize.disconnect();
     };
   }, []);
+
+  // Keep the URL in sync with the current view, so the address bar is always a
+  // shareable link to exactly what is on screen. A pristine default view keeps a
+  // clean URL (and the first-run intro); any customization dirties it.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const isDefault =
+      networkId === "atlas" &&
+      policyId === "balanced" &&
+      speed === 1 &&
+      demand === NETWORKS.atlas.demand;
+    if (isDefault) {
+      window.history.replaceState(null, "", window.location.pathname);
+    } else {
+      const qs = encodeScenario({ network: networkId, policy: policyId, demand, speed });
+      window.history.replaceState(null, "", `?${qs}`);
+    }
+  }, [networkId, policyId, demand, speed]);
+
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      // clipboard unavailable (blocked / insecure context): no-op
+    }
+  };
 
   const toggleRun = () => {
     const next = !running;
@@ -249,6 +292,7 @@ export default function App() {
           ))}
         </div>
         <div className="topbar__actions">
+          <button className="btn btn--sm" onClick={copyLink}>{copied ? "Copied!" : "Copy link"}</button>
           <button className="btn btn--sm" onClick={startTour}>Guided tour</button>
           <button className="btn btn--icon" onClick={() => setShowIntro(true)} aria-label="About and legend" title="About & legend">?</button>
           <a
