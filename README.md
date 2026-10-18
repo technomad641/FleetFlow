@@ -89,6 +89,7 @@ The honest takeaway: a sophisticated optimizer is worth building, but you have t
 - **Real-time discrete-event simulation** of a fulfillment network: sources emit bursty (Poisson) demand, hubs route it, sinks consume it.
 - **Four routing policies** you can switch live: greedy (shortest path), balanced (congestion-aware), optimal (whole-path, congestion-priced), and round-robin.
 - **Two networks** you can switch live: Atlas (where a one-hop heuristic suffices) and Gauntlet (a deeper network where the whole-path optimizer wins).
+- **Guided tour + legend** — a first-run intro and a nine-step walkthrough that drives the sim from Balanced to the Greedy surge collapse to the Gauntlet optimizer win, so anyone gets the story in under a minute.
 - **Scenario injection**: fire a demand surge or take a hub offline and watch the network react and recover.
 - **Live instrumentation**: throughput, backlog, in-transit, on-time rate, delivered total, average latency.
 - **Deterministic and reproducible**: the entire run is a pure function of its seed, so a scenario replays identically and two policies can be compared on the exact same demand.

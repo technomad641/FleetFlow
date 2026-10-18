@@ -94,6 +94,7 @@ export const DEFAULT_NETWORK = {
   demand: 3.0,
   sla: 34,
   overloadHint: "Central hub overloaded. Switch routing to Balanced and watch it recover.",
+  outageTarget: "HUB-C",
   nodes: [
     { id: "SRC-W", name: "West Dock", kind: NODE_KIND.SOURCE, x: 0.08, y: 0.3, capacity: 20 },
     { id: "SRC-E", name: "East Dock", kind: NODE_KIND.SOURCE, x: 0.08, y: 0.72, capacity: 20 },
@@ -136,6 +137,7 @@ export const GAUNTLET_NETWORK = {
   demand: 2.5,
   sla: 14,
   overloadHint: "Express hub jammed. Greedy stalls and Balanced floods the slow lanes. Try Optimal.",
+  outageTarget: "EXP",
   nodes: [
     { id: "SRC-A", name: "Dock A", kind: NODE_KIND.SOURCE, x: 0.08, y: 0.33, capacity: 20 },
     { id: "SRC-B", name: "Dock B", kind: NODE_KIND.SOURCE, x: 0.08, y: 0.67, capacity: 20 },

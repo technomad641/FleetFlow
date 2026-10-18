@@ -10,10 +10,30 @@ import { summarize } from "./sim/metrics.js";
 import { NETWORKS, NETWORK_LIST } from "./sim/network.js";
 import { POLICY_LIST } from "./sim/policies.js";
 import { drawScene } from "./render/renderer.js";
+import Intro from "./Intro.jsx";
+import Tour from "./Tour.jsx";
+import { TOUR_STEPS } from "./content.js";
 
 const BASE_TPS = 10; // simulation ticks per second at 1x speed
 const SPEEDS = [0.5, 1, 2, 4];
 const BACKLOG_ALERT = 60;
+const INTRO_KEY = "fleetflow.introSeen";
+
+function introSeen() {
+  try {
+    return localStorage.getItem(INTRO_KEY) === "1";
+  } catch {
+    return false;
+  }
+}
+
+function markIntroSeen() {
+  try {
+    localStorage.setItem(INTRO_KEY, "1");
+  } catch {
+    // ignore (private mode / disabled storage)
+  }
+}
 
 const RENDER_THEME = {
   grid: "rgba(255, 255, 255, 0.05)",
@@ -45,6 +65,9 @@ export default function App() {
   const [policyId, setPolicyId] = useState("balanced");
   const [demand, setDemand] = useState(NETWORKS.atlas.demand);
   const [view, setView] = useState(() => summarize(simRef.current));
+  const [showIntro, setShowIntro] = useState(() => !introSeen());
+  const [tourIndex, setTourIndex] = useState(null);
+  const [highlight, setHighlight] = useState(null);
 
   // Single animation loop: a fixed-timestep accumulator advances the sim, and
   // every frame renders with interpolation for smoothness.
@@ -151,9 +174,57 @@ export default function App() {
     setView(summarize(simRef.current));
   };
 
+  // Guided tour: apply a step's settings, then let the viewer read and advance.
+  const applyStep = (i) => {
+    const s = TOUR_STEPS[i];
+    if (s.network) changeNetwork(s.network);
+    if (s.policy) changePolicy(s.policy);
+    if (s.demand != null) changeDemand(s.demand);
+    if (s.surge) triggerSurge(simRef.current, 400);
+    if (s.calm) simRef.current.scenario.surge = 0;
+    setRunning(true);
+    runningRef.current = true;
+    setHighlight(s.highlight ?? null);
+  };
+
+  const exitTour = () => {
+    setTourIndex(null);
+    setHighlight(null);
+  };
+
+  const startTour = () => {
+    setShowIntro(false);
+    markIntroSeen();
+    setTourIndex(0);
+    applyStep(0);
+  };
+
+  const nextStep = () => {
+    if (tourIndex >= TOUR_STEPS.length - 1) {
+      exitTour();
+      return;
+    }
+    const n = tourIndex + 1;
+    setTourIndex(n);
+    applyStep(n);
+  };
+
+  const prevStep = () => {
+    if (tourIndex <= 0) return;
+    const n = tourIndex - 1;
+    setTourIndex(n);
+    applyStep(n);
+  };
+
+  const exploreSolo = () => {
+    setShowIntro(false);
+    markIntroSeen();
+  };
+
   // Nudge the viewer toward a better policy when the current one is backing the
   // network up. Optimal is the best answer on both maps, so it never triggers.
   const overloaded = policyId !== "optimal" && view.backlog >= BACKLOG_ALERT;
+  const outageTarget = NETWORKS[networkId].outageTarget;
 
   return (
     <div className="app">
@@ -165,7 +236,7 @@ export default function App() {
             <p className="brand__tag">A live fulfillment network, routed in real time.</p>
           </div>
         </div>
-        <div className="segmented segmented--network" role="group" aria-label="Network">
+        <div className={`segmented segmented--network ${highlight === "network" ? "is-tour" : ""}`} role="group" aria-label="Network">
           {NETWORK_LIST.map((net) => (
             <button
               key={net.id}
@@ -177,26 +248,30 @@ export default function App() {
             </button>
           ))}
         </div>
-        <a
-          className="ghlink"
-          href="https://github.com/technomad641/FleetFlow"
-          target="_blank"
-          rel="noreferrer"
-        >
-          GitHub
-        </a>
+        <div className="topbar__actions">
+          <button className="btn btn--sm" onClick={startTour}>Guided tour</button>
+          <button className="btn btn--icon" onClick={() => setShowIntro(true)} aria-label="About and legend" title="About & legend">?</button>
+          <a
+            className="ghlink"
+            href="https://github.com/technomad641/FleetFlow"
+            target="_blank"
+            rel="noreferrer"
+          >
+            GitHub
+          </a>
+        </div>
       </header>
 
       <section className="metrics" aria-label="Network metrics">
-        <Metric label="Throughput" value={view.throughput.toFixed(1)} unit="pkg/tick" tone="accent" />
-        <Metric label="Backlog" value={view.backlog} unit="waiting" tone={view.backlog >= BACKLOG_ALERT ? "hot" : "default"} />
-        <Metric label="In transit" value={view.inTransit} unit="moving" />
-        <Metric label="On-time" value={view.onTimePct.toFixed(0)} unit="%" tone={view.onTimePct < 80 ? "hot" : "good"} />
-        <Metric label="Delivered" value={view.delivered.toLocaleString()} unit="total" />
-        <Metric label="Avg latency" value={view.avgLatency.toFixed(1)} unit="ticks" />
+        <Metric id="throughput" label="Throughput" value={view.throughput.toFixed(1)} unit="pkg/tick" tone="accent" highlight={highlight} />
+        <Metric id="backlog" label="Backlog" value={view.backlog} unit="waiting" tone={view.backlog >= BACKLOG_ALERT ? "hot" : "default"} highlight={highlight} />
+        <Metric id="inTransit" label="In transit" value={view.inTransit} unit="moving" highlight={highlight} />
+        <Metric id="onTime" label="On-time" value={view.onTimePct.toFixed(0)} unit="%" tone={view.onTimePct < 80 ? "hot" : "good"} highlight={highlight} />
+        <Metric id="delivered" label="Delivered" value={view.delivered.toLocaleString()} unit="total" highlight={highlight} />
+        <Metric id="latency" label="Avg latency" value={view.avgLatency.toFixed(1)} unit="ticks" highlight={highlight} />
       </section>
 
-      <section className="stage">
+      <section className={`stage ${highlight === "stage" ? "is-tour" : ""}`}>
         <canvas ref={canvasRef} className="canvas" />
         <div className="banners">
           {view.surging && <div className="banner banner--surge" role="status">Demand surge in progress</div>}
@@ -246,7 +321,7 @@ export default function App() {
         </div>
 
         <div className="controls__group">
-          <div className="segmented segmented--policy" role="group" aria-label="Routing policy">
+          <div className={`segmented segmented--policy ${highlight === "policy" ? "is-tour" : ""}`} role="group" aria-label="Routing policy">
             {POLICY_LIST.map((p) => (
               <button
                 key={p.id}
@@ -262,17 +337,29 @@ export default function App() {
 
         <div className="controls__group">
           <button className="btn" onClick={() => triggerSurge(simRef.current, 90)}>Surge</button>
-          <button className="btn" onClick={() => triggerOutage(simRef.current, "HUB-C", 90)}>Hub outage</button>
+          <button className="btn" onClick={() => triggerOutage(simRef.current, outageTarget, 90)}>Hub outage</button>
           <button className="btn btn--ghost" onClick={reset}>Reset</button>
         </div>
       </footer>
+
+      {showIntro && (
+        <Intro
+          dismissible={introSeen()}
+          onExplore={exploreSolo}
+          onTour={startTour}
+          onClose={() => setShowIntro(false)}
+        />
+      )}
+      {tourIndex != null && (
+        <Tour index={tourIndex} onNext={nextStep} onBack={prevStep} onExit={exitTour} />
+      )}
     </div>
   );
 }
 
-function Metric({ label, value, unit, tone = "default" }) {
+function Metric({ id, label, value, unit, tone = "default", highlight = null }) {
   return (
-    <div className={`metric metric--${tone}`}>
+    <div className={`metric metric--${tone} ${highlight === id ? "is-tour" : ""}`}>
       <span className="metric__label">{label}</span>
       <span className="metric__value">{value}</span>
       <span className="metric__unit">{unit}</span>
