@@ -740,3 +740,108 @@ body {
   font-weight: 600;
   letter-spacing: 0;
 }
+
+/* =====================  Light theme  =====================
+   Dark is the default (base :root). Light is an explicit override applied when
+   the resolved theme is light. Red stays the single alert color in both. */
+:root[data-theme="light"] {
+  --bg-0: #eef0f4;
+  --bg-1: #ffffff;
+  --panel: rgba(255, 255, 255, 0.82);
+  --panel-solid: #ffffff;
+  --border: rgba(16, 20, 32, 0.1);
+  --border-strong: rgba(16, 20, 32, 0.2);
+  --text: #171a21;
+  --text-muted: #5a6273;
+  --text-faint: #89919f;
+  --accent: #16181d;
+  --accent-2: #3a3f4c;
+  --accent-grad: linear-gradient(120deg, #1b1e25, #3f4552);
+  --good: #171a21;
+  --hot: #d8323b;
+  --warn: #d8323b;
+  --shadow: 0 20px 50px -26px rgba(20, 24, 40, 0.3);
+}
+
+:root[data-theme="light"] body {
+  background:
+    radial-gradient(1200px 700px at 12% -10%, rgba(16, 20, 40, 0.05), transparent 55%),
+    radial-gradient(1000px 680px at 110% 10%, rgba(16, 20, 40, 0.04), transparent 50%),
+    linear-gradient(180deg, var(--bg-1), var(--bg-0));
+}
+
+:root[data-theme="light"] .stage {
+  background:
+    radial-gradient(900px 520px at 50% 0%, rgba(16, 20, 40, 0.04), transparent 60%),
+    rgba(255, 255, 255, 0.6);
+}
+
+:root[data-theme="light"] .brand__mark {
+  box-shadow: 0 6px 18px -8px rgba(20, 24, 40, 0.45);
+}
+:root[data-theme="light"] .brand__mark::after {
+  border-color: var(--bg-1);
+}
+
+:root[data-theme="light"] .btn--primary {
+  color: #fbfbfc;
+  box-shadow: 0 8px 22px -12px rgba(20, 24, 40, 0.5);
+}
+:root[data-theme="light"] .segmented__item.is-active {
+  color: #fbfbfc;
+}
+:root[data-theme="light"] .segmented--policy .segmented__item.is-active {
+  box-shadow: 0 6px 16px -10px rgba(20, 24, 40, 0.5);
+}
+:root[data-theme="light"] .slider::-webkit-slider-thumb {
+  box-shadow: 0 0 0 3px rgba(20, 24, 40, 0.08);
+}
+:root[data-theme="light"] .slider::-moz-range-thumb {
+  box-shadow: 0 0 0 3px rgba(20, 24, 40, 0.08);
+}
+
+:root[data-theme="light"] .overlay {
+  background: rgba(226, 229, 236, 0.74);
+}
+:root[data-theme="light"] .intro,
+:root[data-theme="light"] .tour {
+  background: linear-gradient(180deg, #ffffff, #f3f5f9);
+}
+
+:root[data-theme="light"] .is-tour {
+  animation: pulseLight 1.8s ease-in-out infinite;
+}
+@keyframes pulseLight {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(20, 24, 40, 0.3), 0 0 16px rgba(20, 24, 40, 0.12); }
+  50% { box-shadow: 0 0 0 2px rgba(20, 24, 40, 0.5), 0 0 26px rgba(20, 24, 40, 0.2); }
+}
+
+:root[data-theme="light"] .banner--surge,
+:root[data-theme="light"] .banner--out {
+  background: rgba(16, 20, 40, 0.08);
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+:root[data-theme="light"] .banner--hot {
+  background: rgba(216, 50, 59, 0.12);
+  border-color: rgba(216, 50, 59, 0.5);
+  color: #8a1016;
+}
+
+:root[data-theme="light"] .legend__swatch--source {
+  border-color: rgba(90, 98, 115, 0.8);
+}
+:root[data-theme="light"] .legend__swatch--hub {
+  border-color: rgba(23, 26, 33, 0.9);
+  box-shadow: 0 0 6px rgba(23, 26, 33, 0.3);
+}
+:root[data-theme="light"] .legend__swatch--sink {
+  border-color: rgba(90, 98, 115, 0.7);
+  background: radial-gradient(circle, rgba(23, 26, 33, 0.85) 2px, transparent 3px);
+}
+:root[data-theme="light"] .legend__swatch--packet {
+  background: rgba(23, 26, 33, 0.9);
+}
+:root[data-theme="light"] .legend__swatch--load {
+  background: linear-gradient(90deg, rgba(135, 135, 135, 0.9), #16181d);
+}

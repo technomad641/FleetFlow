@@ -120,6 +120,7 @@ The solver is pure and tested (every customer covered once, capacity respected, 
 - **Guided tour + legend** — a first-run intro and a nine-step walkthrough that drives the sim from Balanced to the Greedy surge collapse to the Gauntlet optimizer win, so anyone gets the story in under a minute.
 - **Shareable scenario links** — the URL always reflects the current view, so you can link straight to a specific setup (say, [Gauntlet + Optimal at 2x](https://technomad641.github.io/FleetFlow/?net=gauntlet&policy=optimal&demand=3.5&speed=2)). Decoding is defensive, so a hand-edited link can never break the app.
 - **Two modes** — Network (the live simulation above) and Dispatch (a capacitated vehicle-routing solver), switchable in the header.
+- **Light and dark themes** — a system / light / dark toggle in the header. The whole visual language inverts correctly, canvases included (the grayscale load ramp flips white-on-dark to black-on-light); red stays the one alert color in both.
 - **Scenario injection**: fire a demand surge or take a hub offline and watch the network react and recover.
 - **Live instrumentation**: throughput, backlog, in-transit, on-time rate, delivered total, average latency.
 - **Deterministic and reproducible**: the entire run is a pure function of its seed, so a scenario replays identically and two policies can be compared on the exact same demand.
@@ -198,8 +199,8 @@ The suites cover the things that actually matter for a simulation: RNG determini
 - **Phase 2a (done)** — a whole-path, congestion-priced optimal router added as a fourth policy, plus a deterministic benchmark harness (`bun run bench`). See the benchmark above.
 - **Phase 2b (done)** — a "Gauntlet" network: a deeper, adversarial topology where one-hop balancing is provably suboptimal and the whole-path optimizer wins decisively. Switchable live in the app.
 - **Phase 2c (done)** — a separate "Dispatch" mode: classic capacitated vehicle routing with Clarke-Wright construction and 2-opt local search, switchable live. Next: time windows (VRPTW) and validation against real CVRPLIB instances (Augerat, Solomon).
-- **Phase 3** — real road distances and maps, richer network editing, shareable scenarios via URL.
-- Light theme, saved scenarios, and a guided tour.
+- **Phase 3** — real road distances and maps, richer network editing.
+- Saved named scenarios.
 
 ## Tech stack
 

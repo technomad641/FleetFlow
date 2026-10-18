@@ -9,6 +9,19 @@
       content="Fleet Flow — an interactive, in-browser simulation of a fulfillment network. Watch work flow, backlog build, and bottlenecks form in real time, and see how routing policy decides whether the network holds or collapses."
     />
     <title>Fleet Flow — live fulfillment network simulator</title>
+    <script>
+      // Set the theme before first paint so there is no flash of the wrong theme.
+      (function () {
+        try {
+          var p = localStorage.getItem("fleetflow.theme") || "system";
+          var dark = window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches;
+          var resolved = p === "light" ? "light" : p === "dark" ? "dark" : dark ? "dark" : "light";
+          document.documentElement.setAttribute("data-theme", resolved);
+        } catch (e) {
+          document.documentElement.setAttribute("data-theme", "dark");
+        }
+      })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

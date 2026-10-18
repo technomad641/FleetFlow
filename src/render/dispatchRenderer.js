@@ -41,12 +41,12 @@ export function drawDispatch(ctx, { instance, solution, width, height, t, theme 
     ctx.beginPath();
     ctx.moveTo(path[0].x, path[0].y);
     for (let k = 1; k < path.length; k += 1) ctx.lineTo(path[k].x, path[k].y);
-    ctx.strokeStyle = `rgba(226, 232, 244, ${shade * 0.5})`;
+    ctx.strokeStyle = `rgba(${theme.routeRGB}, ${shade * 0.5})`;
     ctx.lineWidth = 1.8;
     ctx.lineJoin = "round";
     ctx.stroke();
 
-    drawVehicle(ctx, path, t + i * 0.37, shade);
+    drawVehicle(ctx, path, t + i * 0.37, theme);
   });
 
   // Customers, sized by demand.
@@ -54,7 +54,7 @@ export function drawDispatch(ctx, { instance, solution, width, height, t, theme 
     const c = layout.customers[i];
     const r = 3 + instance.customers[i].demand * 0.9;
     ctx.beginPath();
-    ctx.fillStyle = "rgba(232, 236, 245, 0.92)";
+    ctx.fillStyle = theme.fg;
     ctx.arc(c.x, c.y, r, 0, Math.PI * 2);
     ctx.fill();
   }
@@ -65,7 +65,7 @@ export function drawDispatch(ctx, { instance, solution, width, height, t, theme 
 
 // A marker travelling the route loop, length-normalized so it moves at a steady
 // speed regardless of segment lengths. `phase` offsets each vehicle.
-function drawVehicle(ctx, path, phase, shade) {
+function drawVehicle(ctx, path, phase, theme) {
   let total = 0;
   const segLen = [];
   for (let k = 1; k < path.length; k += 1) {
@@ -84,7 +84,7 @@ function drawVehicle(ctx, path, phase, shade) {
       const x = lerp(path[k].x, path[k + 1].x, f);
       const y = lerp(path[k].y, path[k + 1].y, f);
       ctx.beginPath();
-      ctx.fillStyle = `rgba(255, 255, 255, ${0.6 + shade * 0.4})`;
+      ctx.fillStyle = theme.inkStroke;
       ctx.arc(x, y, 3, 0, Math.PI * 2);
       ctx.fill();
       return;
@@ -96,10 +96,10 @@ function drawVehicle(ctx, path, phase, shade) {
 function drawDepot(ctx, p, theme) {
   const s = 9;
   ctx.save();
-  ctx.shadowColor = "rgba(255, 255, 255, 0.85)";
+  ctx.shadowColor = theme.glow;
   ctx.shadowBlur = 20;
   ctx.fillStyle = theme.nodeFill;
-  ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+  ctx.strokeStyle = theme.inkStroke;
   ctx.lineWidth = 2.4;
   ctx.beginPath();
   ctx.rect(p.x - s, p.y - s, s * 2, s * 2);

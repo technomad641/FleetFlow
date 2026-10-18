@@ -15,6 +15,8 @@ import Tour from "./Tour.jsx";
 import { TOUR_STEPS } from "./content.js";
 import { encodeScenario, decodeScenario, hasScenario } from "./shareState.js";
 import Dispatch from "./Dispatch.jsx";
+import ThemeToggle from "./ThemeToggle.jsx";
+import { resolveTheme, nextTheme, loadTheme, saveTheme, THEME } from "./theme.js";
 
 const BASE_TPS = 10; // simulation ticks per second at 1x speed
 const SPEEDS = [0.5, 1, 2, 4];
@@ -37,11 +39,46 @@ function markIntroSeen() {
   }
 }
 
-const RENDER_THEME = {
-  grid: "rgba(255, 255, 255, 0.05)",
-  nodeFill: "rgba(10, 11, 14, 0.94)",
-  label: "rgba(214, 219, 230, 0.82)",
+// Canvas palettes per theme. The grayscale load ramp runs calm -> high (white on
+// dark, near-black on light); congestion tips into red in both.
+const DARK_THEME = {
+  grid: "rgba(255,255,255,0.05)",
+  nodeFill: "rgba(10,11,14,0.94)",
+  label: "rgba(214,219,230,0.82)",
+  calm: 150,
+  high: 255,
+  fg: "rgba(240,242,248,0.95)",
+  queue: "rgba(232,236,245,0.92)",
+  routeRGB: "226,232,244",
+  inkStroke: "rgba(255,255,255,0.95)",
+  glow: "rgba(255,255,255,0.85)",
 };
+const LIGHT_THEME = {
+  grid: "rgba(12,16,28,0.06)",
+  nodeFill: "rgba(255,255,255,0.96)",
+  label: "rgba(44,50,62,0.85)",
+  calm: 135,
+  high: 22,
+  fg: "rgba(26,30,40,0.92)",
+  queue: "rgba(44,50,62,0.9)",
+  routeRGB: "30,36,48",
+  inkStroke: "rgba(22,26,34,0.92)",
+  glow: "rgba(20,24,40,0.22)",
+};
+
+function getStorage() {
+  try {
+    return typeof window !== "undefined" ? window.localStorage : null;
+  } catch {
+    return null;
+  }
+}
+
+function systemPrefersDark() {
+  return typeof window !== "undefined" && window.matchMedia
+    ? window.matchMedia("(prefers-color-scheme: dark)").matches
+    : true;
+}
 
 function makeSim(networkId, policyId) {
   const net = NETWORKS[networkId];
@@ -85,6 +122,13 @@ export default function App() {
   const [highlight, setHighlight] = useState(null);
   const [copied, setCopied] = useState(false);
   const [mode, setMode] = useState("network"); // "network" | "dispatch"
+  const [themePreference, setThemePreference] = useState(() => loadTheme(getStorage()));
+  const [prefersDark, setPrefersDark] = useState(() => systemPrefersDark());
+
+  const resolvedTheme = resolveTheme(themePreference, prefersDark);
+  const renderTheme = resolvedTheme === THEME.DARK ? DARK_THEME : LIGHT_THEME;
+  const renderThemeRef = useRef(renderTheme);
+  renderThemeRef.current = renderTheme;
 
   // Single animation loop: a fixed-timestep accumulator advances the sim, and
   // every frame renders with interpolation for smoothness.
@@ -135,7 +179,7 @@ export default function App() {
         width: rect.clientWidth,
         height: rect.clientHeight,
         tickFloat: sim.tick + alpha,
-        theme: RENDER_THEME,
+        theme: renderThemeRef.current,
       });
 
       // Refresh the dashboard at the sim rate, not the frame rate.
@@ -181,6 +225,23 @@ export default function App() {
       // clipboard unavailable (blocked / insecure context): no-op
     }
   };
+
+  // Watch the OS preference while on "system".
+  useEffect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return undefined;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const on = (e) => setPrefersDark(e.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+
+  // Apply the resolved theme to the document and persist the preference.
+  useEffect(() => {
+    document.documentElement.setAttribute("data-theme", resolvedTheme);
+    saveTheme(getStorage(), themePreference);
+  }, [resolvedTheme, themePreference]);
+
+  const cycleTheme = () => setThemePreference((p) => nextTheme(p));
 
   const toggleRun = () => {
     const next = !running;
@@ -308,6 +369,7 @@ export default function App() {
           {mode === "network" && (
             <button className="btn btn--sm" onClick={startTour}>Guided tour</button>
           )}
+          <ThemeToggle preference={themePreference} onCycle={cycleTheme} />
           <button className="btn btn--icon" onClick={() => setShowIntro(true)} aria-label="About and legend" title="About & legend">?</button>
           <a
             className="ghlink"
@@ -404,7 +466,7 @@ export default function App() {
       </>
       )}
 
-      {mode === "dispatch" && <Dispatch theme={RENDER_THEME} />}
+      {mode === "dispatch" && <Dispatch theme={renderTheme} />}
 
       {showIntro && (
         <Intro

@@ -10,6 +10,7 @@ import runMetricsTests from "../src/sim/metrics.test.js";
 import runShareStateTests from "../src/shareState.test.js";
 import runVrpInstanceTests from "../src/vrp/instance.test.js";
 import runSolverTests from "../src/vrp/solver.test.js";
+import runThemeTests from "../src/theme.test.js";
 
 const testSuites = [
   ["rng", runRngTests],
@@ -20,6 +21,7 @@ const testSuites = [
   ["shareState", runShareStateTests],
   ["vrp-instance", runVrpInstanceTests],
   ["vrp-solver", runSolverTests],
+  ["theme", runThemeTests],
 ];
 
 let failures = 0;
