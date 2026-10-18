@@ -84,6 +84,34 @@ On Atlas, congestion-awareness is the whole game: the load-blind policies collap
 
 The honest takeaway: a sophisticated optimizer is worth building, but you have to know when it pays off. On a shallow network a simple heuristic already wins; on a deeper one the whole-path optimizer pulls clearly ahead. Switch networks in the app and toggle policies to watch it happen.
 
+## Dispatch mode: classic vehicle routing
+
+Switch to **Dispatch** in the header for the other half of the routing story: the capacitated vehicle routing problem (CVRP). A depot, a set of customers each with a demand, and a fleet of fixed-capacity trucks that must serve everyone and return home, minimizing total distance. It is NP-hard, so the solver uses heuristics you can switch live:
+
+- **One per stop** — the trivial baseline: a separate truck for every customer.
+- **Savings** — Clarke-Wright parallel savings, the classic CVRP construction heuristic: merge the routes whose endpoints are cheapest to join, respecting capacity.
+- **Savings + 2-opt** — then run 2-opt within each route to undo crossings.
+
+On a 20-customer instance (capacity 18):
+
+| Solver | Vehicles | Total distance | vs one-per-stop |
+| --- | --- | --- | --- |
+| One per stop | 20 | 12.97 | — |
+| Savings + 2-opt | **3** | **3.06** | **76% shorter** |
+
+<table>
+<tr>
+<td width="50%"><img src="docs/assets/dispatch-naive.jpg" alt="One truck per stop: a starburst of 20 routes from the depot" /></td>
+<td width="50%"><img src="docs/assets/dispatch-opt.jpg" alt="Savings + 2-opt: three tight capacity-respecting loops" /></td>
+</tr>
+<tr>
+<td align="center"><strong>One per stop</strong> — 20 trucks, a starburst.</td>
+<td align="center"><strong>Savings + 2-opt</strong> — 3 trucks, tight loops.</td>
+</tr>
+</table>
+
+The solver is pure and tested (every customer covered once, capacity respected, 2-opt never regresses, and it reaches the known optimum on a hand-built instance). It lives in `src/vrp/` and is independent of the live simulation; the two modes share only the app shell and the design system.
+
 ## Features
 
 - **Real-time discrete-event simulation** of a fulfillment network: sources emit bursty (Poisson) demand, hubs route it, sinks consume it.
@@ -91,6 +119,7 @@ The honest takeaway: a sophisticated optimizer is worth building, but you have t
 - **Two networks** you can switch live: Atlas (where a one-hop heuristic suffices) and Gauntlet (a deeper network where the whole-path optimizer wins).
 - **Guided tour + legend** — a first-run intro and a nine-step walkthrough that drives the sim from Balanced to the Greedy surge collapse to the Gauntlet optimizer win, so anyone gets the story in under a minute.
 - **Shareable scenario links** — the URL always reflects the current view, so you can link straight to a specific setup (say, [Gauntlet + Optimal at 2x](https://technomad641.github.io/FleetFlow/?net=gauntlet&policy=optimal&demand=3.5&speed=2)). Decoding is defensive, so a hand-edited link can never break the app.
+- **Two modes** — Network (the live simulation above) and Dispatch (a capacitated vehicle-routing solver), switchable in the header.
 - **Scenario injection**: fire a demand surge or take a hub offline and watch the network react and recover.
 - **Live instrumentation**: throughput, backlog, in-transit, on-time rate, delivered total, average latency.
 - **Deterministic and reproducible**: the entire run is a pure function of its seed, so a scenario replays identically and two policies can be compared on the exact same demand.
@@ -139,16 +168,23 @@ A thin orchestrator (`App.jsx`) wires together pure, testable modules. Everythin
 
 ```
 src/
-  sim/
-    rng.js          seeded PRNG + Poisson demand (deterministic)
-    network.js      node/lane model, BFS hop distances, the reference network
-    policies.js     greedy / balanced / optimal / round-robin routing
-    simulation.js   the tick engine: demand -> dispatch -> advance -> accounting
-    metrics.js      read-only dashboard + load views
-    *.test.js       one suite per module
+  sim/                the live network simulation
+    rng.js            seeded PRNG + Poisson demand (deterministic)
+    network.js        node/lane model, BFS hop distances, the reference networks
+    policies.js       greedy / balanced / optimal / round-robin routing
+    simulation.js     the tick engine: demand -> dispatch -> advance -> accounting
+    metrics.js        read-only dashboard + load views
+  vrp/                the Dispatch mode (independent CVRP solver)
+    instance.js       depot/customer model, distance matrix, random instances
+    solver.js         naive / Clarke-Wright savings / 2-opt
   render/
-    renderer.js     canvas drawing pass (pure, reads state, never mutates)
-  App.jsx           orchestrator: render loop, controls, dashboard
+    renderer.js       network canvas pass (pure, reads state, never mutates)
+    dispatchRenderer.js  CVRP canvas pass (depot, customers, routes, vehicles)
+  shareState.js       encode/decode the view into a shareable URL
+  content.js          intro copy, legend, guided-tour script
+  App.jsx             orchestrator: mode switch, render loop, controls
+  Dispatch.jsx        the Dispatch view
+  *.test.js           one suite per pure module (8 in all)
 ```
 
 ### Testing
@@ -161,7 +197,7 @@ The suites cover the things that actually matter for a simulation: RNG determini
 
 - **Phase 2a (done)** — a whole-path, congestion-priced optimal router added as a fourth policy, plus a deterministic benchmark harness (`bun run bench`). See the benchmark above.
 - **Phase 2b (done)** — a "Gauntlet" network: a deeper, adversarial topology where one-hop balancing is provably suboptimal and the whole-path optimizer wins decisively. Switchable live in the app.
-- **Phase 2c** — a separate "Dispatch" mode: classic vehicle routing (CVRP / VRPTW) with Clarke-Wright construction and local search, benchmarked against real CVRPLIB instances (Augerat, Solomon).
+- **Phase 2c (done)** — a separate "Dispatch" mode: classic capacitated vehicle routing with Clarke-Wright construction and 2-opt local search, switchable live. Next: time windows (VRPTW) and validation against real CVRPLIB instances (Augerat, Solomon).
 - **Phase 3** — real road distances and maps, richer network editing, shareable scenarios via URL.
 - Light theme, saved scenarios, and a guided tour.
 

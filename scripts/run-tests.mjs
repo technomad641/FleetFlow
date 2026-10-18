@@ -8,6 +8,8 @@ import runPolicyTests from "../src/sim/policies.test.js";
 import runSimulationTests from "../src/sim/simulation.test.js";
 import runMetricsTests from "../src/sim/metrics.test.js";
 import runShareStateTests from "../src/shareState.test.js";
+import runVrpInstanceTests from "../src/vrp/instance.test.js";
+import runSolverTests from "../src/vrp/solver.test.js";
 
 const testSuites = [
   ["rng", runRngTests],
@@ -16,6 +18,8 @@ const testSuites = [
   ["simulation", runSimulationTests],
   ["metrics", runMetricsTests],
   ["shareState", runShareStateTests],
+  ["vrp-instance", runVrpInstanceTests],
+  ["vrp-solver", runSolverTests],
 ];
 
 let failures = 0;

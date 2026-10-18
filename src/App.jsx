@@ -14,6 +14,7 @@ import Intro from "./Intro.jsx";
 import Tour from "./Tour.jsx";
 import { TOUR_STEPS } from "./content.js";
 import { encodeScenario, decodeScenario, hasScenario } from "./shareState.js";
+import Dispatch from "./Dispatch.jsx";
 
 const BASE_TPS = 10; // simulation ticks per second at 1x speed
 const SPEEDS = [0.5, 1, 2, 4];
@@ -83,10 +84,12 @@ export default function App() {
   const [tourIndex, setTourIndex] = useState(null);
   const [highlight, setHighlight] = useState(null);
   const [copied, setCopied] = useState(false);
+  const [mode, setMode] = useState("network"); // "network" | "dispatch"
 
   // Single animation loop: a fixed-timestep accumulator advances the sim, and
   // every frame renders with interpolation for smoothness.
   useEffect(() => {
+    if (mode !== "network") return undefined; // the sim canvas only exists in network mode
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     let raf = 0;
@@ -149,7 +152,7 @@ export default function App() {
       cancelAnimationFrame(raf);
       resize.disconnect();
     };
-  }, []);
+  }, [mode]);
 
   // Keep the URL in sync with the current view, so the address bar is always a
   // shareable link to exactly what is on screen. A pristine default view keeps a
@@ -238,6 +241,7 @@ export default function App() {
   const startTour = () => {
     setShowIntro(false);
     markIntroSeen();
+    setMode("network");
     setTourIndex(0);
     applyStep(0);
   };
@@ -279,21 +283,31 @@ export default function App() {
             <p className="brand__tag">A live fulfillment network, routed in real time.</p>
           </div>
         </div>
-        <div className={`segmented segmented--network ${highlight === "network" ? "is-tour" : ""}`} role="group" aria-label="Network">
-          {NETWORK_LIST.map((net) => (
-            <button
-              key={net.id}
-              className={`segmented__item ${networkId === net.id ? "is-active" : ""}`}
-              onClick={() => changeNetwork(net.id)}
-              title={net.id === "gauntlet" ? "Deeper network where whole-path routing wins" : "Balanced beats greedy here"}
-            >
-              {net.name}
-            </button>
-          ))}
+        <div className="segmented segmented--mode" role="group" aria-label="View">
+          <button className={`segmented__item ${mode === "network" ? "is-active" : ""}`} onClick={() => setMode("network")}>Network</button>
+          <button className={`segmented__item ${mode === "dispatch" ? "is-active" : ""}`} onClick={() => setMode("dispatch")}>Dispatch</button>
         </div>
+        {mode === "network" && (
+          <div className={`segmented segmented--network ${highlight === "network" ? "is-tour" : ""}`} role="group" aria-label="Network">
+            {NETWORK_LIST.map((net) => (
+              <button
+                key={net.id}
+                className={`segmented__item ${networkId === net.id ? "is-active" : ""}`}
+                onClick={() => changeNetwork(net.id)}
+                title={net.id === "gauntlet" ? "Deeper network where whole-path routing wins" : "Balanced beats greedy here"}
+              >
+                {net.name}
+              </button>
+            ))}
+          </div>
+        )}
         <div className="topbar__actions">
-          <button className="btn btn--sm" onClick={copyLink}>{copied ? "Copied!" : "Copy link"}</button>
-          <button className="btn btn--sm" onClick={startTour}>Guided tour</button>
+          {mode === "network" && (
+            <button className="btn btn--sm" onClick={copyLink}>{copied ? "Copied!" : "Copy link"}</button>
+          )}
+          {mode === "network" && (
+            <button className="btn btn--sm" onClick={startTour}>Guided tour</button>
+          )}
           <button className="btn btn--icon" onClick={() => setShowIntro(true)} aria-label="About and legend" title="About & legend">?</button>
           <a
             className="ghlink"
@@ -306,6 +320,8 @@ export default function App() {
         </div>
       </header>
 
+      {mode === "network" && (
+      <>
       <section className="metrics" aria-label="Network metrics">
         <Metric id="throughput" label="Throughput" value={view.throughput.toFixed(1)} unit="pkg/tick" tone="accent" highlight={highlight} />
         <Metric id="backlog" label="Backlog" value={view.backlog} unit="waiting" tone={view.backlog >= BACKLOG_ALERT ? "hot" : "default"} highlight={highlight} />
@@ -385,6 +401,10 @@ export default function App() {
           <button className="btn btn--ghost" onClick={reset}>Reset</button>
         </div>
       </footer>
+      </>
+      )}
+
+      {mode === "dispatch" && <Dispatch theme={RENDER_THEME} />}
 
       {showIntro && (
         <Intro

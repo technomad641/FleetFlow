@@ -732,3 +732,11 @@ body {
     animation: none;
   }
 }
+
+/* Dispatch: a text-valued metric (the solver name) sits smaller than the big
+   numeric readouts. */
+.metric__value--sm {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0;
+}
