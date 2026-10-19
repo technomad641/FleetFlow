@@ -204,6 +204,10 @@ The **renderer** is a pure drawing pass over simulation state. It runs at the di
 
 ## Architecture
 
+![Fleet Flow architecture: App.jsx orchestrates two self-contained modes — Network (src/sim) and Dispatch (src/vrp) — each with its own render loop into its own Canvas 2D stage](docs/assets/architecture.gif)
+
+<sub>App.jsx is the only stateful layer. It switches two modes, each a cluster of pure modules: Network (seeded simulation + four routing policies → `renderer.js`) and Dispatch (CVRP/VRPTW solvers + real benchmarks → `dispatchRenderer.js`). No backend; localStorage holds the theme and the URL carries a shareable scenario. · <a href="https://technomad641.github.io/FleetFlow/architecture.html"><strong>Open the interactive diagram</strong></a> (pan, zoom, inspect each module's source).</sub>
+
 A thin orchestrator (`App.jsx`) wires together pure, testable modules. Everything that makes a decision lives in a pure module with no DOM and no clock, so it can be unit-tested directly.
 
 ```
