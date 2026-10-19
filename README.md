@@ -88,6 +88,10 @@ The honest takeaway: a sophisticated optimizer is worth building, but you have t
 
 Switch to **Dispatch** in the header for the other half of the routing story: the vehicle routing problem. A depot, a set of customers each with a demand, and a fleet of fixed-capacity trucks that must serve everyone and return home, minimizing total distance. It is NP-hard, so the solver uses heuristics you can switch live. Pick a random layout you can resize, or one of three real published benchmarks.
 
+![Dispatch demo: one truck per stop collapses into tight loops, then Solomon C101 delivers on time, then ignoring the time windows floods the map red](docs/assets/dispatch-demo.gif)
+
+<sub>One truck per stop → Clarke-Wright savings + 2-opt tightens it to a handful of loops → the real Solomon C101 benchmark, 10 trucks all on time → switch to "ignore windows" and the same stops, served in a shorter but clock-blind order, flood red: 87 of 100 deadlines missed.</sub>
+
 ### CVRP — capacity only
 
 - **One per stop** — the trivial baseline: a separate truck for every customer.
